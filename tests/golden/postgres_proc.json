@@ -1,0 +1,33 @@
+{
+  "dynamic_sql": false,
+  "tables": {
+    "PUBLIC.CUSTOMERS": {
+      "schema": "PUBLIC",
+      "base": "CUSTOMERS",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "C"
+      ],
+      "columns": [
+        "ID"
+      ]
+    },
+    "PUBLIC.ORDERS": {
+      "schema": "PUBLIC",
+      "base": "ORDERS",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "O"
+      ],
+      "columns": [
+        "CREATED_AT",
+        "CUSTOMER_ID",
+        "ORDER_ID"
+      ]
+    }
+  }
+}

@@ -1,1576 +1,795 @@
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SP Migration Companion — BSA Tool</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --navy: #0D1B2A;
-      --navy-mid: #1A2E45;
-      --navy-light: #243B55;
-      --steel: #3A7CA5;
-      --steel-bright: #4D9CC8;
-      --accent: #00C2A8;
-      --accent-dim: #00906F;
-      --warn: #F5A623;
-      --danger: #E8453C;
-      --success: #27AE60;
-      --purple: #A78BFA;
-      --text-primary: #E8EDF2;
-      --text-secondary: #8FA3B8;
-      --text-dim: #5A7A96;
-      --surface: #162032;
-      --surface-raised: #1E2D40;
-      --surface-high: #253548;
-      --border: #2A3F57;
-      --border-light: #3A5470;
-      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
-      --radius: 6px;
-      --radius-lg: 12px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0
-    }
-
-    body {
-      background: var(--navy);
-      color: var(--text-primary);
-      font-family: var(--font-body);
-      font-size: 14px;
-      min-height: 100vh;
-      line-height: 1.5
-    }
-
-    /* Header */
-    .header {
-      background: var(--navy-mid);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100
-    }
-
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px
-    }
-
-    .brand-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--accent), var(--steel));
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px
-    }
-
-    .brand-name {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -.3px
-    }
-
-    .brand-sub {
-      font-size: 11px;
-      color: var(--text-dim);
-      letter-spacing: .5px;
-      text-transform: uppercase
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px
-    }
-
-    /* API config bar */
-    .api-bar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 8px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 12px
-    }
-
-    .api-label {
-      color: var(--text-dim);
-      white-space: nowrap
-    }
-
-    .api-input {
-      background: var(--surface-raised);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 5px 10px;
-      color: var(--text-primary);
-      font-size: 12px;
-      font-family: var(--font-mono);
-      outline: none;
-      width: 340px
-    }
-
-    .api-input:focus {
-      border-color: var(--steel)
-    }
-
-    .api-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      display: inline-block
-    }
-
-    .dot-ok {
-      background: var(--success)
-    }
-
-    .dot-err {
-      background: var(--danger)
-    }
-
-    .dot-idle {
-      background: var(--text-dim)
-    }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 14px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      transition: all .15s;
-      font-family: var(--font-body);
-      white-space: nowrap
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: var(--navy);
-      font-weight: 600
-    }
-
-    .btn-primary:hover {
-      background: #00D9BB
-    }
-
-    .btn-secondary {
-      background: var(--surface-high);
-      color: var(--text-primary);
-      border: 1px solid var(--border)
-    }
-
-    .btn-secondary:hover {
-      background: var(--border)
-    }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-secondary);
-      border: 1px solid var(--border)
-    }
-
-    .btn-ghost:hover {
-      color: var(--text-primary);
-      border-color: var(--border-light)
-    }
-
-    .btn-purple {
-      background: rgba(167, 139, 250, .15);
-      color: var(--purple);
-      border: 1px solid rgba(167, 139, 250, .3)
-    }
-
-    .btn-purple:hover {
-      background: rgba(167, 139, 250, .25)
-    }
-
-    .btn:disabled {
-      opacity: .4;
-      cursor: not-allowed
-    }
-
-    .btn-sm {
-      padding: 4px 10px;
-      font-size: 12px
-    }
-
-    /* Upload zone */
-    .upload-zone {
-      max-width: 680px;
-      margin: 60px auto 0;
-      padding: 0 24px;
-      text-align: center
-    }
-
-    .upload-hero {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -.5px;
-      line-height: 1.2;
-      margin-bottom: 10px
-    }
-
-    .upload-hero span {
-      color: var(--accent)
-    }
-
-    .upload-sub {
-      color: var(--text-secondary);
-      font-size: 14px;
-      margin-bottom: 36px
-    }
-
-    .dropzone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius-lg);
-      padding: 48px 24px;
-      cursor: pointer;
-      transition: all .2s;
-      background: var(--surface);
-      position: relative
-    }
-
-    .dropzone:hover,
-    .dropzone.drag-over {
-      border-color: var(--accent);
-      background: rgba(0, 194, 168, .05)
-    }
-
-    .dropzone input[type=file] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%
-    }
-
-    .dropzone-icon {
-      font-size: 40px;
-      margin-bottom: 14px;
-      display: block
-    }
-
-    .dropzone-label {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 6px
-    }
-
-    .dropzone-hint {
-      font-size: 12px;
-      color: var(--text-dim)
-    }
-
-    .file-list {
-      margin-top: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center
-    }
-
-    .file-chip {
-      background: var(--surface-raised);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 12px 4px 10px;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--text-secondary)
-    }
-
-    .file-chip .rm {
-      cursor: pointer;
-      color: var(--text-dim);
-      font-size: 14px
-    }
-
-    .file-chip .rm:hover {
-      color: var(--danger)
-    }
-
-    .analyze-row {
-      margin-top: 24px;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap
-    }
-
-    .progress-bar {
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      margin-top: 20px;
-      overflow: hidden;
-      display: none
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--steel-bright));
-      width: 0%;
-      transition: width .3s;
-      border-radius: 2px
-    }
-
-    /* Results */
-    .results {
-      display: none
-    }
-
-    .results-header {
-      background: var(--navy-mid);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap
-    }
-
-    .results-meta {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap
-    }
-
-    .meta-stat {
-      display: flex;
-      align-items: baseline;
-      gap: 5px
-    }
-
-    .meta-stat .num {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--accent);
-      font-variant-numeric: tabular-nums
-    }
-
-    .meta-stat .label {
-      font-size: 11px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: .5px
-    }
-
-    .meta-divider {
-      width: 1px;
-      height: 28px;
-      background: var(--border)
-    }
-
-    /* Tabs */
-    .tabs-bar {
-      background: var(--navy-mid);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      display: flex;
-      gap: 2px;
-      overflow-x: auto
-    }
-
-    .tab-btn {
-      padding: 12px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-dim);
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      border-bottom: 2px solid transparent;
-      white-space: nowrap;
-      transition: all .15s;
-      font-family: var(--font-body);
-      display: flex;
-      align-items: center;
-      gap: 7px
-    }
-
-    .tab-btn:hover {
-      color: var(--text-secondary)
-    }
-
-    .tab-btn.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent)
-    }
-
-    .tab-badge {
-      background: var(--surface-high);
-      color: var(--text-secondary);
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 10px;
-      font-weight: 600
-    }
-
-    .tab-btn.active .tab-badge {
-      background: rgba(0, 194, 168, .15);
-      color: var(--accent)
-    }
-
-    .tab-panel {
-      display: none;
-      padding: 20px 24px
-    }
-
-    .tab-panel.active {
-      display: block
-    }
-
-    /* Filter bar */
-    .filter-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-      align-items: center;
-      flex-wrap: wrap
-    }
-
-    .search-wrap {
-      position: relative
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-dim);
-      font-size: 13px;
-      pointer-events: none
-    }
-
-    .search-input {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 7px 12px 7px 32px;
-      color: var(--text-primary);
-      font-size: 13px;
-      font-family: var(--font-body);
-      outline: none;
-      width: 260px;
-      transition: border-color .15s
-    }
-
-    .search-input:focus {
-      border-color: var(--steel)
-    }
-
-    .filter-select {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 7px 28px 7px 10px;
-      color: var(--text-secondary);
-      font-size: 12px;
-      font-family: var(--font-body);
-      outline: none;
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A7A96'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center
-    }
-
-    .results-count {
-      margin-left: auto;
-      font-size: 12px;
-      color: var(--text-dim)
-    }
-
-    /* Table */
-    .table-wrap {
-      overflow-x: auto;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border)
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px
-    }
-
-    thead {
-      background: var(--surface-raised);
-      position: sticky;
-      top: 0;
-      z-index: 10
-    }
-
-    th {
-      padding: 10px 14px;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-      cursor: pointer;
-      user-select: none
-    }
-
-    th:hover {
-      color: var(--text-secondary)
-    }
-
-    th.sort-asc::after {
-      content: ' ↑';
-      color: var(--accent)
-    }
-
-    th.sort-desc::after {
-      content: ' ↓';
-      color: var(--accent)
-    }
-
-    tr:nth-child(even) td {
-      background: rgba(26, 46, 69, .4)
-    }
-
-    td {
-      padding: 9px 14px;
-      border-bottom: 1px solid rgba(42, 63, 87, .5);
-      vertical-align: middle
-    }
-
-    tr:last-child td {
-      border-bottom: none
-    }
-
-    tr:hover td {
-      background: rgba(0, 194, 168, .04)
-    }
-
-    /* Badges */
-    .op-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      font-family: var(--font-mono)
-    }
-
-    .op-SELECT {
-      background: rgba(55, 86, 35, .4);
-      color: #7DC45B;
-      border: 1px solid rgba(55, 86, 35, .8)
-    }
-
-    .op-INSERT {
-      background: rgba(131, 60, 0, .4);
-      color: #F5A623;
-      border: 1px solid rgba(131, 60, 0, .8)
-    }
-
-    .op-UPDATE {
-      background: rgba(127, 96, 0, .4);
-      color: #FFD60A;
-      border: 1px solid rgba(127, 96, 0, .8)
-    }
-
-    .op-DELETE {
-      background: rgba(200, 0, 0, .3);
-      color: #FF6B6B;
-      border: 1px solid rgba(200, 0, 0, .6)
-    }
-
-    .op-MERGE {
-      background: rgba(58, 50, 104, .5);
-      color: #A78BFA;
-      border: 1px solid rgba(58, 50, 104, .9)
-    }
-
-    .op-TRUNCATE {
-      background: rgba(66, 0, 0, .4);
-      color: #FF4444;
-      border: 1px solid rgba(66, 0, 0, .8)
-    }
-
-    .schema-chip {
-      background: var(--navy-light);
-      color: var(--steel-bright);
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      border: 1px solid var(--border)
-    }
-
-    .col-name {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--accent)
-    }
-
-    .unresolved-tag {
-      font-size: 11px;
-      color: var(--text-dim);
-      font-style: italic
-    }
-
-    .warn-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(245, 166, 35, .15);
-      color: var(--warn);
-      border: 1px solid rgba(245, 166, 35, .3);
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 600
-    }
-
-    /* Summary cards */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px
-    }
-
-    .summary-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px 20px
-    }
-
-    .summary-card-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--text-dim);
-      margin-bottom: 8px
-    }
-
-    .summary-card-value {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--accent);
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      margin-bottom: 6px
-    }
-
-    .summary-card-sub {
-      font-size: 12px;
-      color: var(--text-secondary)
-    }
-
-    .proc-list {
-      margin-top: 16px
-    }
-
-    .proc-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .proc-item:last-child {
-      border-bottom: none
-    }
-
-    .proc-name {
-      font-family: var(--font-mono);
-      font-size: 12px
-    }
-
-    .proc-meta {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-top: 2px
-    }
-
-    /* Schema cards */
-    .schema-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px
-    }
-
-    .schema-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden
-    }
-
-    .schema-card-header {
-      background: var(--surface-raised);
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border)
-    }
-
-    .schema-name {
-      font-size: 12px;
-      font-weight: 700;
-      font-family: var(--font-mono);
-      color: var(--steel-bright);
-      text-transform: uppercase;
-      letter-spacing: 1px
-    }
-
-    .schema-count {
-      font-size: 11px;
-      color: var(--text-dim)
-    }
-
-    .schema-table-row {
-      padding: 8px 14px;
-      border-bottom: 1px solid rgba(42, 63, 87, .4)
-    }
-
-    .schema-table-row:last-child {
-      border-bottom: none
-    }
-
-    .schema-table-name {
-      font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer
-    }
-
-    .schema-table-name:hover {
-      color: var(--accent)
-    }
-
-    .schema-cols {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 4px
-    }
-
-    .col-tag {
-      background: rgba(0, 194, 168, .08);
-      color: var(--accent);
-      border: 1px solid rgba(0, 194, 168, .2);
-      font-size: 11px;
-      padding: 1px 7px;
-      border-radius: 3px;
-      font-family: var(--font-mono)
-    }
-
-    /* AI Insights panel */
-    .ai-panel {
-      background: var(--surface);
-      border: 1px solid rgba(167, 139, 250, .3);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      margin-top: 20px
-    }
-
-    .ai-panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px
-    }
-
-    .ai-panel-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--purple);
-      display: flex;
-      align-items: center;
-      gap: 8px
-    }
-
-    .ai-model-tag {
-      font-size: 10px;
-      background: rgba(167, 139, 250, .1);
-      color: var(--purple);
-      border: 1px solid rgba(167, 139, 250, .2);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 400
-    }
-
-    .ai-content {
-      font-size: 13px;
-      line-height: 1.7;
-      color: var(--text-primary);
-      white-space: pre-wrap;
-      font-family: var(--font-body)
-    }
-
-    .ai-loading {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text-dim);
-      font-size: 13px
-    }
-
-    .ai-spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid var(--border);
-      border-top-color: var(--purple);
-      border-radius: 50%;
-      animation: spin .8s linear infinite
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg)
-      }
-    }
-
-    .ai-error {
-      color: var(--danger);
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 8px
-    }
-
-    /* AI checkbox row */
-    .ai-checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      background: rgba(167, 139, 250, .05);
-      border: 1px solid rgba(167, 139, 250, .2);
-      border-radius: var(--radius);
-      margin-bottom: 16px
-    }
-
-    .ai-checkbox-row label {
-      font-size: 13px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px
-    }
-
-    .ai-checkbox-row input[type=checkbox] {
-      accent-color: var(--purple);
-      width: 15px;
-      height: 15px;
-      cursor: pointer
-    }
-
-    .ai-proc-select {
-      background: var(--surface-raised);
-      border: 1px solid rgba(167, 139, 250, .3);
-      border-radius: var(--radius);
-      padding: 5px 10px;
-      color: var(--text-secondary);
-      font-size: 12px;
-      font-family: var(--font-body);
-      outline: none;
-      cursor: pointer;
-      flex: 1;
-      max-width: 300px
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--surface-high);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius);
-      padding: 12px 18px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, .4);
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all .2s;
-      z-index: 999;
-      pointer-events: none
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0)
-    }
-
-    /* Error banner */
-    .error-banner {
-      background: rgba(232, 69, 60, .1);
-      border: 1px solid rgba(232, 69, 60, .3);
-      border-radius: var(--radius);
-      padding: 10px 16px;
-      font-size: 13px;
-      color: var(--danger);
-      display: none;
-      margin: 16px 24px
-    }
-
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SP Migration Companion — BSA Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --navy:        #0D1B2A;
+  --navy-mid:    #1A2E45;
+  --navy-light:  #243B55;
+  --steel:       #3A7CA5;
+  --steel-bright:#4D9CC8;
+  --accent:      #00C2A8;
+  --accent-dim:  #00906F;
+  --warn:        #F5A623;
+  --danger:      #E8453C;
+  --success:     #27AE60;
+  --purple:      #A78BFA;
+  --text-primary:   #E8EDF2;
+  --text-secondary: #8FA3B8;
+  --text-dim:       #5A7A96;
+  --surface:        #162032;
+  --surface-raised: #1E2D40;
+  --surface-high:   #253548;
+  --border:         #2A3F57;
+  --border-light:   #3A5470;
+  --font-mono: 'Cascadia Code','Fira Code','Consolas',monospace;
+  --font-body: 'Inter','Segoe UI',system-ui,sans-serif;
+  --radius: 6px; --radius-lg: 12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--navy);color:var(--text-primary);font-family:var(--font-body);font-size:14px;min-height:100vh;line-height:1.5}
+
+/* Header */
+.header{background:var(--navy-mid);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--steel));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.brand-name{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.brand-sub{font-size:11px;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase}
+.header-actions{display:flex;align-items:center;gap:10px}
+
+/* API config bar */
+.api-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;gap:12px;font-size:12px}
+.api-label{color:var(--text-dim);white-space:nowrap}
+.api-input{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;color:var(--text-primary);font-size:12px;font-family:var(--font-mono);outline:none;width:340px}
+.api-input:focus{border-color:var(--steel)}
+.api-status{display:flex;align-items:center;gap:5px;font-size:11px}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot-ok{background:var(--success)}
+.dot-err{background:var(--danger)}
+.dot-idle{background:var(--text-dim)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:var(--font-body);white-space:nowrap}
+.btn-primary{background:var(--accent);color:var(--navy);font-weight:600}
+.btn-primary:hover{background:#00D9BB}
+.btn-secondary{background:var(--surface-high);color:var(--text-primary);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text-primary);border-color:var(--border-light)}
+.btn-purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+.btn-purple:hover{background:rgba(167,139,250,.25)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:4px 10px;font-size:12px}
+
+/* Upload zone */
+.upload-zone{max-width:680px;margin:60px auto 0;padding:0 24px;text-align:center}
+.upload-hero{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.2;margin-bottom:10px}
+.upload-hero span{color:var(--accent)}
+.upload-sub{color:var(--text-secondary);font-size:14px;margin-bottom:36px}
+.dropzone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:48px 24px;cursor:pointer;transition:all .2s;background:var(--surface);position:relative}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:rgba(0,194,168,.05)}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dropzone-icon{font-size:40px;margin-bottom:14px;display:block}
+.dropzone-label{font-size:15px;font-weight:600;margin-bottom:6px}
+.dropzone-hint{font-size:12px;color:var(--text-dim)}
+.file-list{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.file-chip{background:var(--surface-raised);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 10px;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--text-secondary)}
+.file-chip .rm{cursor:pointer;color:var(--text-dim);font-size:14px}
+.file-chip .rm:hover{color:var(--danger)}
+.analyze-row{margin-top:24px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:20px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--steel-bright));width:0%;transition:width .3s;border-radius:2px}
+
+/* Results */
+.results{display:none}
+.results-header{background:var(--navy-mid);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.results-meta{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.meta-stat{display:flex;align-items:baseline;gap:5px}
+.meta-stat .num{font-size:22px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.meta-stat .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px}
+.meta-divider{width:1px;height:28px;background:var(--border)}
+
+/* Tabs */
+.tabs-bar{background:var(--navy-mid);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:2px;overflow-x:auto}
+.tab-btn{padding:12px 16px;font-size:13px;font-weight:500;color:var(--text-dim);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;font-family:var(--font-body);display:flex;align-items:center;gap:7px}
+.tab-btn:hover{color:var(--text-secondary)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{background:var(--surface-high);color:var(--text-secondary);font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+.tab-btn.active .tab-badge{background:rgba(0,194,168,.15);color:var(--accent)}
+.tab-panel{display:none;padding:20px 24px}
+.tab-panel.active{display:block}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.search-wrap{position:relative}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:13px;pointer-events:none}
+.search-input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px 7px 32px;color:var(--text-primary);font-size:13px;font-family:var(--font-body);outline:none;width:260px;transition:border-color .15s}
+.search-input:focus{border-color:var(--steel)}
+.filter-select{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 28px 7px 10px;color:var(--text-secondary);font-size:12px;font-family:var(--font-body);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A7A96'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.results-count{margin-left:auto;font-size:12px;color:var(--text-dim)}
+
+/* Table */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--surface-raised);position:sticky;top:0;z-index:10}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text-secondary)}
+th.sort-asc::after{content:' ↑';color:var(--accent)}
+th.sort-desc::after{content:' ↓';color:var(--accent)}
+tr:nth-child(even) td{background:rgba(26,46,69,.4)}
+td{padding:9px 14px;border-bottom:1px solid rgba(42,63,87,.5);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,194,168,.04)}
+
+/* Badges */
+.op-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;font-family:var(--font-mono)}
+.op-SELECT  {background:rgba(55,86,35,.4); color:#7DC45B;border:1px solid rgba(55,86,35,.8)}
+.op-INSERT  {background:rgba(131,60,0,.4); color:#F5A623;border:1px solid rgba(131,60,0,.8)}
+.op-UPDATE  {background:rgba(127,96,0,.4); color:#FFD60A;border:1px solid rgba(127,96,0,.8)}
+.op-DELETE  {background:rgba(200,0,0,.3);  color:#FF6B6B;border:1px solid rgba(200,0,0,.6)}
+.op-MERGE   {background:rgba(58,50,104,.5);color:#A78BFA;border:1px solid rgba(58,50,104,.9)}
+.op-TRUNCATE{background:rgba(66,0,0,.4);   color:#FF4444;border:1px solid rgba(66,0,0,.8)}
+.schema-chip{background:var(--navy-light);color:var(--steel-bright);font-size:11px;padding:2px 8px;border-radius:4px;font-family:var(--font-mono);border:1px solid var(--border)}
+.col-name{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
+.unresolved-tag{font-size:11px;color:var(--text-dim);font-style:italic}
+.warn-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(245,166,35,.15);color:var(--warn);border:1px solid rgba(245,166,35,.3);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+
+/* Summary cards */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px}
+.summary-card-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:8px}
+.summary-card-value{font-size:32px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1;margin-bottom:6px}
+.summary-card-sub{font-size:12px;color:var(--text-secondary)}
+.proc-list{margin-top:16px}
+.proc-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.proc-item:last-child{border-bottom:none}
+.proc-name{font-family:var(--font-mono);font-size:12px}
+.proc-meta{font-size:11px;color:var(--text-dim);margin-top:2px}
+
+/* Schema cards */
+.schema-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.schema-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.schema-card-header{background:var(--surface-raised);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.schema-name{font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--steel-bright);text-transform:uppercase;letter-spacing:1px}
+.schema-count{font-size:11px;color:var(--text-dim)}
+.schema-table-row{padding:8px 14px;border-bottom:1px solid rgba(42,63,87,.4)}
+.schema-table-row:last-child{border-bottom:none}
+.schema-table-name{font-weight:600;font-size:13px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.schema-table-name:hover{color:var(--accent)}
+.schema-cols{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.col-tag{background:rgba(0,194,168,.08);color:var(--accent);border:1px solid rgba(0,194,168,.2);font-size:11px;padding:1px 7px;border-radius:3px;font-family:var(--font-mono)}
+
+/* AI Insights panel */
+.ai-panel{background:var(--surface);border:1px solid rgba(167,139,250,.3);border-radius:var(--radius-lg);padding:20px;margin-top:20px}
+.ai-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ai-panel-title{font-size:14px;font-weight:700;color:var(--purple);display:flex;align-items:center;gap:8px}
+.ai-model-tag{font-size:10px;background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);padding:2px 8px;border-radius:10px;font-weight:400}
+.ai-content{font-size:13px;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;font-family:var(--font-body)}
+.ai-loading{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:13px}
+.ai-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-error{color:var(--danger);font-size:13px;display:flex;align-items:center;gap:8px}
+
+/* AI checkbox row */
+.ai-checkbox-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.2);border-radius:var(--radius);margin-bottom:16px}
+.ai-checkbox-row label{font-size:13px;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:8px}
+.ai-checkbox-row input[type=checkbox]{accent-color:var(--purple);width:15px;height:15px;cursor:pointer}
+.ai-proc-select{background:var(--surface-raised);border:1px solid rgba(167,139,250,.3);border-radius:var(--radius);padding:5px 10px;color:var(--text-secondary);font-size:12px;font-family:var(--font-body);outline:none;cursor:pointer;flex:1;max-width:300px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface-high);border:1px solid var(--border-light);border-radius:var(--radius);padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transform:translateY(10px);transition:all .2s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* Error banner */
+.error-banner{background:rgba(232,69,60,.1);border:1px solid rgba(232,69,60,.3);border-radius:var(--radius);padding:10px 16px;font-size:13px;color:var(--danger);display:none;margin:16px 24px}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
 </head>
-
 <body>
 
-  <!-- Header -->
-  <header class="header">
-    <div class="header-brand">
-      <div class="brand-icon">🔍</div>
-      <div>
-        <div class="brand-name">SP Migration Companion</div>
-        <div class="brand-sub">BSA Tool — Stored Procedure Analyzer</div>
-      </div>
+<!-- Header -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-icon">🔍</div>
+    <div>
+      <div class="brand-name">SP Migration Companion</div>
+      <div class="brand-sub">BSA Tool — Stored Procedure Analyzer</div>
     </div>
-    <div class="header-actions" id="headerActions" style="display:none">
-      <button class="btn btn-ghost" onclick="resetTool()">↩ New Analysis</button>
-      <button class="btn btn-primary" onclick="downloadExcel()">⬇ Download Excel</button>
-    </div>
-  </header>
+  </div>
+  <div class="header-actions" id="headerActions" style="display:none">
+    <button class="btn btn-ghost" onclick="resetTool()">↩ New Analysis</button>
+    <button class="btn btn-primary" onclick="downloadExcel()">⬇ Download Excel</button>
+  </div>
+</header>
 
-  <!-- API config bar -->
-  <div class="api-bar">
-    <span class="api-label">API Endpoint:</span>
-    <input class="api-input" id="apiUrl" value="http://localhost:8000"
-      placeholder="https://your-render-app.onrender.com" onchange="checkApiHealth()" />
-    <button class="btn btn-ghost btn-sm" onclick="checkApiHealth()">Check</button>
-    <div class="api-status" id="apiStatus">
-      <span class="dot dot-idle" id="apiDot"></span>
-      <span id="apiStatusText" style="color:var(--text-dim)">Not checked</span>
+<!-- API config bar -->
+<div class="api-bar">
+  <span class="api-label">API Endpoint:</span>
+  <input class="api-input" id="apiUrl" value="https://sql-sp-companion-api.onrender.com"
+         placeholder="https://your-render-app.onrender.com"
+         onchange="checkApiHealth()" />
+  <button class="btn btn-ghost btn-sm" onclick="checkApiHealth()">Check</button>
+  <div class="api-status" id="apiStatus">
+    <span class="dot dot-idle" id="apiDot"></span>
+    <span id="apiStatusText" style="color:var(--text-dim)">Not checked</span>
+  </div>
+</div>
+
+<div class="error-banner" id="errorBanner"></div>
+
+<!-- Upload -->
+<div class="upload-zone" id="uploadZone">
+  <div class="upload-hero">Analyze stored procedures.<br><span>Plan migrations with confidence.</span></div>
+  <p class="upload-sub">Upload .sql files — the Python backend extracts every physical table, schema, column and CRUD operation. Optional AI insights powered by HuggingFace Mistral-7B.</p>
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" multiple accept=".sql,.txt" onchange="handleFiles(this.files)">
+    <span class="dropzone-icon">📂</span>
+    <div class="dropzone-label">Drop .sql files here or click to browse</div>
+    <div class="dropzone-hint">Multi-file · T-SQL · PostgreSQL · MySQL · Oracle · Any encoding</div>
+  </div>
+  <div class="file-list" id="fileList"></div>
+  <div class="analyze-row">
+    <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()" disabled>▶ Analyze via API</button>
+    <button class="btn btn-ghost" onclick="loadDemo()">Try demo SQL</button>
+  </div>
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="results" id="results">
+  <div class="results-header">
+    <div class="results-meta">
+      <div class="meta-stat"><span class="num" id="statProcs">0</span><span class="label">Procedures</span></div>
+      <div class="meta-divider"></div>
+      <div class="meta-stat"><span class="num" id="statTables">0</span><span class="label">Tables</span></div>
+      <div class="meta-divider"></div>
+      <div class="meta-stat"><span class="num" id="statSchemas">0</span><span class="label">Schemas</span></div>
+      <div class="meta-divider"></div>
+      <div class="meta-stat"><span class="num" id="statCols">0</span><span class="label">Columns</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="downloadExcel()">⬇ Download Excel</button>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('summary',this)">📋 Summary</button>
+    <button class="tab-btn" onclick="switchTab('tables',this)">
+      🗂 Physical Tables <span class="tab-badge" id="badgeTables">0</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('columns',this)">
+      📐 Columns Detail <span class="tab-badge" id="badgeCols">0</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('schema',this)">🏗 Schema Breakdown</button>
+    <button class="tab-btn" onclick="switchTab('ai',this)">✨ AI Insights</button>
+  </div>
+
+  <!-- Summary tab -->
+  <div class="tab-panel active" id="tab-summary">
+    <div class="summary-grid" id="summaryCards"></div>
+    <div id="procList"></div>
+  </div>
+
+  <!-- Tables tab -->
+  <div class="tab-panel" id="tab-tables">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" placeholder="Search tables…" oninput="filterTable('tablesTable',this.value)"/>
+      </div>
+      <select class="filter-select" id="schemaFilter" onchange="applyTableFilters()">
+        <option value="">All schemas</option>
+      </select>
+      <select class="filter-select" id="opFilter" onchange="applyTableFilters()">
+        <option value="">All operations</option>
+        <option>SELECT</option><option>INSERT</option>
+        <option>UPDATE</option><option>DELETE</option>
+        <option>MERGE</option><option>TRUNCATE</option>
+      </select>
+      <span class="results-count" id="tablesCount"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="tablesTable">
+        <thead><tr>
+          <th onclick="sortTable('tablesTable',0)">Procedure</th>
+          <th onclick="sortTable('tablesTable',1)">Schema</th>
+          <th onclick="sortTable('tablesTable',2)">Table Name</th>
+          <th onclick="sortTable('tablesTable',3)">Operations</th>
+          <th onclick="sortTable('tablesTable',4)">Aliases</th>
+        </tr></thead>
+        <tbody id="tablesBody"></tbody>
+      </table>
     </div>
   </div>
 
-  <div class="error-banner" id="errorBanner"></div>
-
-  <!-- Upload -->
-  <div class="upload-zone" id="uploadZone">
-    <div class="upload-hero">Analyze stored procedures.<br><span>Plan migrations with confidence.</span></div>
-    <p class="upload-sub">Upload .sql files — the Python backend extracts every physical table, schema, column and
-      CRUD operation. Optional AI insights powered by HuggingFace Mistral-7B.</p>
-    <div class="dropzone" id="dropzone">
-      <input type="file" id="fileInput" multiple accept=".sql,.txt" onchange="handleFiles(this.files)">
-      <span class="dropzone-icon">📂</span>
-      <div class="dropzone-label">Drop .sql files here or click to browse</div>
-      <div class="dropzone-hint">Multi-file · T-SQL · PostgreSQL · MySQL · Oracle · Any encoding</div>
+  <!-- Columns tab -->
+  <div class="tab-panel" id="tab-columns">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" placeholder="Search columns or tables…" oninput="filterTable('colsTable',this.value)"/>
+      </div>
+      <span class="results-count" id="colsCount"></span>
     </div>
-    <div class="file-list" id="fileList"></div>
-    <div class="analyze-row">
-      <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()" disabled>▶ Analyze via API</button>
-      <button class="btn btn-ghost" onclick="loadDemo()">Try demo SQL</button>
-    </div>
-    <div class="progress-bar" id="progressBar">
-      <div class="progress-fill" id="progressFill"></div>
+    <div class="table-wrap">
+      <table id="colsTable">
+        <thead><tr>
+          <th onclick="sortTable('colsTable',0)">Procedure</th>
+          <th onclick="sortTable('colsTable',1)">Schema</th>
+          <th onclick="sortTable('colsTable',2)">Table</th>
+          <th onclick="sortTable('colsTable',3)">Column</th>
+          <th onclick="sortTable('colsTable',4)">Operations</th>
+        </tr></thead>
+        <tbody id="colsBody"></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Results -->
-  <div class="results" id="results">
-    <div class="results-header">
-      <div class="results-meta">
-        <div class="meta-stat"><span class="num" id="statProcs">0</span><span class="label">Procedures</span></div>
-        <div class="meta-divider"></div>
-        <div class="meta-stat"><span class="num" id="statTables">0</span><span class="label">Tables</span></div>
-        <div class="meta-divider"></div>
-        <div class="meta-stat"><span class="num" id="statSchemas">0</span><span class="label">Schemas</span></div>
-        <div class="meta-divider"></div>
-        <div class="meta-stat"><span class="num" id="statCols">0</span><span class="label">Columns</span></div>
+  <!-- Schema tab -->
+  <div class="tab-panel" id="tab-schema">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" placeholder="Search schemas or tables…" oninput="filterCards(this.value)"/>
       </div>
-      <button class="btn btn-primary" onclick="downloadExcel()">⬇ Download Excel</button>
     </div>
+    <div class="schema-grid" id="schemaGrid"></div>
+  </div>
 
-    <div class="tabs-bar">
-      <button class="tab-btn active" onclick="switchTab('summary',this)">📋 Summary</button>
-      <button class="tab-btn" onclick="switchTab('tables',this)">
-        🗂 Physical Tables <span class="tab-badge" id="badgeTables">0</span>
-      </button>
-      <button class="tab-btn" onclick="switchTab('columns',this)">
-        📐 Columns Detail <span class="tab-badge" id="badgeCols">0</span>
-      </button>
-      <button class="tab-btn" onclick="switchTab('schema',this)">🏗 Schema Breakdown</button>
-      <button class="tab-btn" onclick="switchTab('ai',this)">✨ AI Insights</button>
-    </div>
-
-    <!-- Summary tab -->
-    <div class="tab-panel active" id="tab-summary">
-      <div class="summary-grid" id="summaryCards"></div>
-      <div id="procList"></div>
-    </div>
-
-    <!-- Tables tab -->
-    <div class="tab-panel" id="tab-tables">
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input class="search-input" placeholder="Search tables…" oninput="filterTable('tablesTable',this.value)" />
-        </div>
-        <select class="filter-select" id="schemaFilter" onchange="applyTableFilters()">
-          <option value="">All schemas</option>
+  <!-- AI Insights tab -->
+  <div class="tab-panel" id="tab-ai">
+    <div class="ai-checkbox-row">
+      <label>
+        <input type="checkbox" id="aiEnabled" onchange="toggleAiOptions()"/>
+        Enable AI Migration Risk Insights (HuggingFace Mistral-7B)
+      </label>
+      <span style="font-size:11px;color:var(--warn)" title="Table names, schema names and operation types are sent to the HuggingFace Inference API. Your SQL source code is never sent.">⚠ Sends schema metadata (not SQL source) to external API</span>
+      <div id="aiOptions" style="display:none;display:none;align-items:center;gap:10px;flex:1">
+        <span style="font-size:12px;color:var(--text-dim)">Focus on:</span>
+        <select class="ai-proc-select" id="aiProcSelect">
+          <option value="">All procedures</option>
         </select>
-        <select class="filter-select" id="opFilter" onchange="applyTableFilters()">
-          <option value="">All operations</option>
-          <option>SELECT</option>
-          <option>INSERT</option>
-          <option>UPDATE</option>
-          <option>DELETE</option>
-          <option>MERGE</option>
-          <option>TRUNCATE</option>
-        </select>
-        <span class="results-count" id="tablesCount"></span>
-      </div>
-      <div class="table-wrap">
-        <table id="tablesTable">
-          <thead>
-            <tr>
-              <th onclick="sortTable('tablesTable',0)">Procedure</th>
-              <th onclick="sortTable('tablesTable',1)">Schema</th>
-              <th onclick="sortTable('tablesTable',2)">Table Name</th>
-              <th onclick="sortTable('tablesTable',3)">Operations</th>
-              <th onclick="sortTable('tablesTable',4)">Aliases</th>
-            </tr>
-          </thead>
-          <tbody id="tablesBody"></tbody>
-        </table>
+        <button class="btn btn-purple btn-sm" onclick="getAiInsights()">✨ Generate Insights</button>
       </div>
     </div>
 
-    <!-- Columns tab -->
-    <div class="tab-panel" id="tab-columns">
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input class="search-input" placeholder="Search columns or tables…"
-            oninput="filterTable('colsTable',this.value)" />
+    <div id="aiPanel" class="ai-panel" style="display:none">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">
+          ✨ Migration Risk Assessment
+          <span class="ai-model-tag" id="aiModelTag">Mistral-7B</span>
         </div>
-        <span class="results-count" id="colsCount"></span>
+        <button class="btn btn-ghost btn-sm" onclick="getAiInsights()">↻ Regenerate</button>
       </div>
-      <div class="table-wrap">
-        <table id="colsTable">
-          <thead>
-            <tr>
-              <th onclick="sortTable('colsTable',0)">Procedure</th>
-              <th onclick="sortTable('colsTable',1)">Schema</th>
-              <th onclick="sortTable('colsTable',2)">Table</th>
-              <th onclick="sortTable('colsTable',3)">Column</th>
-              <th onclick="sortTable('colsTable',4)">Operations</th>
-            </tr>
-          </thead>
-          <tbody id="colsBody"></tbody>
-        </table>
+      <div id="aiPanelContent">
+        <div class="ai-loading" id="aiLoading" style="display:none">
+          <div class="ai-spinner"></div>
+          Analyzing with Mistral-7B — this may take 20–40 seconds if the model is cold-starting…
+        </div>
+        <div class="ai-error" id="aiError" style="display:none">⚠ <span id="aiErrorMsg"></span></div>
+        <div class="ai-content" id="aiText"></div>
       </div>
     </div>
 
-    <!-- Schema tab -->
-    <div class="tab-panel" id="tab-schema">
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input class="search-input" placeholder="Search schemas or tables…" oninput="filterCards(this.value)" />
-        </div>
-      </div>
-      <div class="schema-grid" id="schemaGrid"></div>
-    </div>
-
-    <!-- AI Insights tab -->
-    <div class="tab-panel" id="tab-ai">
-      <div class="ai-checkbox-row">
-        <label>
-          <input type="checkbox" id="aiEnabled" onchange="toggleAiOptions()" />
-          Enable AI Migration Risk Insights (HuggingFace Mistral-7B)
-        </label>
-        <div id="aiOptions" style="display:none;display:none;align-items:center;gap:10px;flex:1">
-          <span style="font-size:12px;color:var(--text-dim)">Focus on:</span>
-          <select class="ai-proc-select" id="aiProcSelect">
-            <option value="">All procedures</option>
-          </select>
-          <button class="btn btn-purple btn-sm" onclick="getAiInsights()">✨ Generate Insights</button>
-        </div>
-      </div>
-
-      <div id="aiPanel" class="ai-panel" style="display:none">
-        <div class="ai-panel-header">
-          <div class="ai-panel-title">
-            ✨ Migration Risk Assessment
-            <span class="ai-model-tag" id="aiModelTag">Mistral-7B</span>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="getAiInsights()">↻ Regenerate</button>
-        </div>
-        <div id="aiPanelContent">
-          <div class="ai-loading" id="aiLoading" style="display:none">
-            <div class="ai-spinner"></div>
-            Analyzing with Mistral-7B — this may take 20–40 seconds if the model is cold-starting…
-          </div>
-          <div class="ai-error" id="aiError" style="display:none">⚠ <span id="aiErrorMsg"></span></div>
-          <div class="ai-content" id="aiText"></div>
-        </div>
-      </div>
-
-      <div id="aiEmptyState" style="text-align:center;padding:60px 24px;color:var(--text-dim)">
-        <span style="font-size:36px;display:block;margin-bottom:12px">✨</span>
-        <div style="font-size:14px;margin-bottom:6px">AI Insights not enabled</div>
-        <div style="font-size:12px">Check the box above to generate a migration risk assessment powered by HuggingFace
-          Mistral-7B</div>
-      </div>
+    <div id="aiEmptyState" style="text-align:center;padding:60px 24px;color:var(--text-dim)">
+      <span style="font-size:36px;display:block;margin-bottom:12px">✨</span>
+      <div style="font-size:14px;margin-bottom:6px">AI Insights not enabled</div>
+      <div style="font-size:12px">Check the box above to generate a migration risk assessment powered by HuggingFace Mistral-7B</div>
     </div>
   </div>
+</div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast">
-    <span id="toastIcon">✅</span>
-    <span id="toastMsg">Done</span>
-  </div>
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">Done</span>
+</div>
 
-  <script>
-    // ── State ──────────────────────────────────────────────────────
-    let uploadedFiles = [];
-    let analysisResult = null;
+<script>
+// ── State ──────────────────────────────────────────────────────
+let uploadedFiles  = [];
+let analysisResult = null;
 
-    function apiBase() {
-      return (document.getElementById('apiUrl').value || 'http://localhost:8000').replace(/\/$/, '');
+function apiBase() {
+  return (document.getElementById('apiUrl').value || 'https://sql-sp-companion-api.onrender.com').replace(/\/$/, '');
+}
+
+// ── Health check ───────────────────────────────────────────────
+async function checkApiHealth() {
+  const dot  = document.getElementById('apiDot');
+  const text = document.getElementById('apiStatusText');
+  dot.className = 'dot dot-idle';
+  text.style.color = 'var(--text-dim)';
+  text.textContent = 'Checking…';
+
+  // Render free tier sleeps after ~15min idle; a cold start can take 30-60s.
+  // Without this notice, that first request just looks broken and visitors leave.
+  const wakingTimer = setTimeout(() => {
+    text.textContent = 'Waking backend (~30-60s, free tier)…';
+  }, 3000);
+
+  try {
+    const r = await fetch(`${apiBase()}/health`, { signal: AbortSignal.timeout(60000) });
+    clearTimeout(wakingTimer);
+    if (r.ok) {
+      const d = await r.json();
+      dot.className = 'dot dot-ok';
+      text.style.color = 'var(--success)';
+      text.textContent = `Connected${d.hf_configured ? ' · HF ✓' : ' · HF not configured'}`;
+    } else {
+      throw new Error(`HTTP ${r.status}`);
     }
+  } catch(e) {
+    clearTimeout(wakingTimer);
+    dot.className = 'dot dot-err';
+    text.style.color = 'var(--danger)';
+    text.textContent = `Unreachable — ${e.message}`;
+  }
+}
 
-    // ── Health check ───────────────────────────────────────────────
-    async function checkApiHealth() {
-      const dot = document.getElementById('apiDot');
-      const text = document.getElementById('apiStatusText');
-      dot.className = 'dot dot-idle';
-      text.style.color = 'var(--text-dim)';
-      text.textContent = 'Checking…';
-      try {
-        const r = await fetch(`${apiBase()}/health`, { signal: AbortSignal.timeout(5000) });
-        if (r.ok) {
-          const d = await r.json();
-          dot.className = 'dot dot-ok';
-          text.style.color = 'var(--success)';
-          text.textContent = `Connected${d.hf_configured ? ' · HF ✓' : ' · HF not configured'}`;
-        } else {
-          throw new Error(`HTTP ${r.status}`);
-        }
-      } catch (e) {
-        dot.className = 'dot dot-err';
-        text.style.color = 'var(--danger)';
-        text.textContent = `Unreachable — ${e.message}`;
-      }
-    }
+// ── File handling ──────────────────────────────────────────────
+function handleFiles(files) {
+  for (const f of files) {
+    if (!uploadedFiles.find(u => u.name === f.name)) uploadedFiles.push(f);
+  }
+  renderFileList();
+}
 
-    // ── File handling ──────────────────────────────────────────────
-    function handleFiles(files) {
-      for (const f of files) {
-        if (!uploadedFiles.find(u => u.name === f.name)) uploadedFiles.push(f);
-      }
-      renderFileList();
-    }
-
-    function renderFileList() {
-      document.getElementById('fileList').innerHTML = uploadedFiles.map((f, i) => `
-  <div class="file-chip">📄 ${f.name}
-    <span class="rm" onclick="removeFile(${i})">×</span>
-  </div>`).join('');
-      document.getElementById('analyzeBtn').disabled = uploadedFiles.length === 0;
-    }
-
-    function removeFile(i) { uploadedFiles.splice(i, 1); renderFileList(); }
-
-    const dz = document.getElementById('dropzone');
-    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
-
-    // ── Analyze — calls FastAPI /analyze ──────────────────────────
-    async function analyze() {
-      if (!uploadedFiles.length) return;
-      hideError();
-
-      const pb = document.getElementById('progressBar');
-      const pf = document.getElementById('progressFill');
-      pb.style.display = 'block';
-      pf.style.width = '30%';
-
-      const fd = new FormData();
-      for (const f of uploadedFiles) fd.append('files', f);
-
-      try {
-        pf.style.width = '60%';
-        const r = await fetch(`${apiBase()}/analyze`, { method: 'POST', body: fd });
-
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({ detail: r.statusText }));
-          throw new Error(err.detail || r.statusText);
-        }
-
-        pf.style.width = '100%';
-        analysisResult = await r.json();
-        renderResults(analysisResult);
-        showToast('✅', `Analysis complete — ${analysisResult.stats.total_tables} tables found`);
-      } catch (e) {
-        showError(`API Error: ${e.message}. Make sure the backend is running at ${apiBase()}`);
-        pf.style.width = '0%';
-      } finally {
-        pb.style.display = 'none';
-      }
-    }
-
-    // ── Render ─────────────────────────────────────────────────────
-    function renderResults(data) {
-      document.getElementById('uploadZone').style.display = 'none';
-      document.getElementById('results').style.display = 'block';
-      document.getElementById('headerActions').style.display = 'flex';
-
-      document.getElementById('statProcs').textContent = data.stats.total_procedures;
-      document.getElementById('statTables').textContent = data.stats.total_tables;
-      document.getElementById('statSchemas').textContent = data.stats.total_schemas;
-      document.getElementById('statCols').textContent = data.stats.total_columns;
-      document.getElementById('badgeTables').textContent = data.tables.length;
-      document.getElementById('badgeCols').textContent = data.columns.length;
-
-      // Schema filter
-      const sf = document.getElementById('schemaFilter');
-      sf.innerHTML = '<option value="">All schemas</option>' +
-        Object.keys(data.schema_map).sort().map(s => `<option>${s}</option>`).join('');
-
-      // AI proc select
-      const ps = document.getElementById('aiProcSelect');
-      ps.innerHTML = '<option value="">All procedures</option>' +
-        data.procedures.map(p => `<option>${p.name}</option>`).join('');
-
-      renderSummary(data);
-      renderTablesTab(data);
-      renderColumnsTab(data);
-      renderSchemaTab(data);
-    }
-
-    function renderSummary(data) {
-      const dynProcs = data.procedures.filter(p => p.is_dynamic);
-      document.getElementById('summaryCards').innerHTML = `
-  <div class="summary-card">
-    <div class="summary-card-label">Stored Procedures</div>
-    <div class="summary-card-value">${data.stats.total_procedures}</div>
-    <div class="summary-card-sub">across ${uploadedFiles.length} file(s)</div>
-  </div>
-  <div class="summary-card">
-    <div class="summary-card-label">Physical Tables</div>
-    <div class="summary-card-value">${data.stats.total_tables}</div>
-    <div class="summary-card-sub">${data.stats.total_schemas} schema(s): ${Object.keys(data.schema_map).join(', ')}</div>
-  </div>
-  <div class="summary-card">
-    <div class="summary-card-label">Columns Resolved</div>
-    <div class="summary-card-value">${data.stats.total_columns}</div>
-    <div class="summary-card-sub">mapped to physical tables</div>
-  </div>
-  <div class="summary-card">
-    <div class="summary-card-label">Dynamic SQL</div>
-    <div class="summary-card-value" style="color:${dynProcs.length ? 'var(--warn)' : 'var(--success)'}">${dynProcs.length}</div>
-    <div class="summary-card-sub">${dynProcs.length ? 'Requires manual review' : 'None — fully analyzable'}</div>
-  </div>`;
-
-      document.getElementById('procList').innerHTML =
-        `<div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Procedure Breakdown</div>` +
-        data.procedures.map(p => `
-    <div class="proc-item">
-      <div>
-        <div class="proc-name">${p.name}</div>
-        <div class="proc-meta">${p.file} · ${p.dialect}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:12px;color:var(--text-secondary)">${p.table_count} tables · ${p.col_count} cols</span>
-        ${p.is_dynamic ? '<span class="warn-badge">⚠ Dynamic SQL</span>' : ''}
-      </div>
+function renderFileList() {
+  document.getElementById('fileList').innerHTML = uploadedFiles.map((f,i)=>`
+    <div class="file-chip">📄 ${f.name}
+      <span class="rm" onclick="removeFile(${i})">×</span>
     </div>`).join('');
+  document.getElementById('analyzeBtn').disabled = uploadedFiles.length === 0;
+}
+
+function removeFile(i) { uploadedFiles.splice(i,1); renderFileList(); }
+
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+
+// ── Analyze — calls FastAPI /analyze ──────────────────────────
+async function analyze() {
+  if (!uploadedFiles.length) return;
+  hideError();
+
+  const pb = document.getElementById('progressBar');
+  const pf = document.getElementById('progressFill');
+  pb.style.display = 'block';
+  pf.style.width   = '30%';
+
+  const fd = new FormData();
+  for (const f of uploadedFiles) fd.append('files', f);
+
+  try {
+    pf.style.width = '60%';
+    const r = await fetch(`${apiBase()}/analyze`, { method: 'POST', body: fd });
+
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({detail: r.statusText}));
+      throw new Error(err.detail || r.statusText);
     }
 
-    function opBadges(ops) {
-      return ops.split(', ').map(op => `<span class="op-badge op-${op.trim()}">${op.trim()}</span>`).join(' ');
+    pf.style.width = '100%';
+    analysisResult = await r.json();
+    renderResults(analysisResult);
+    showToast('✅', `Analysis complete — ${analysisResult.stats.total_tables} tables found`);
+  } catch(e) {
+    showError(`API Error: ${e.message}. Make sure the backend is running at ${apiBase()}`);
+    pf.style.width = '0%';
+  } finally {
+    pb.style.display = 'none';
+  }
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function renderResults(data) {
+  document.getElementById('uploadZone').style.display  = 'none';
+  document.getElementById('results').style.display     = 'block';
+  document.getElementById('headerActions').style.display = 'flex';
+
+  document.getElementById('statProcs').textContent   = data.stats.total_procedures;
+  document.getElementById('statTables').textContent  = data.stats.total_tables;
+  document.getElementById('statSchemas').textContent = data.stats.total_schemas;
+  document.getElementById('statCols').textContent    = data.stats.total_columns;
+  document.getElementById('badgeTables').textContent = data.tables.length;
+  document.getElementById('badgeCols').textContent   = data.columns.length;
+
+  // Schema filter
+  const sf = document.getElementById('schemaFilter');
+  sf.innerHTML = '<option value="">All schemas</option>' +
+    Object.keys(data.schema_map).sort().map(s=>`<option>${s}</option>`).join('');
+
+  // AI proc select
+  const ps = document.getElementById('aiProcSelect');
+  ps.innerHTML = '<option value="">All procedures</option>' +
+    data.procedures.map(p=>`<option>${p.name}</option>`).join('');
+
+  renderSummary(data);
+  renderTablesTab(data);
+  renderColumnsTab(data);
+  renderSchemaTab(data);
+}
+
+function renderSummary(data) {
+  const dynProcs = data.procedures.filter(p=>p.is_dynamic);
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="summary-card">
+      <div class="summary-card-label">Stored Procedures</div>
+      <div class="summary-card-value">${data.stats.total_procedures}</div>
+      <div class="summary-card-sub">across ${uploadedFiles.length} file(s)</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-label">Physical Tables</div>
+      <div class="summary-card-value">${data.stats.total_tables}</div>
+      <div class="summary-card-sub">${data.stats.total_schemas} schema(s): ${Object.keys(data.schema_map).join(', ')}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-label">Columns Resolved</div>
+      <div class="summary-card-value">${data.stats.total_columns}</div>
+      <div class="summary-card-sub">mapped to physical tables</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-label">Dynamic SQL</div>
+      <div class="summary-card-value" style="color:${dynProcs.length?'var(--warn)':'var(--success)'}">${dynProcs.length}</div>
+      <div class="summary-card-sub">${dynProcs.length?'Requires manual review':'None — fully analyzable'}</div>
+    </div>`;
+
+  document.getElementById('procList').innerHTML =
+    `<div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Procedure Breakdown</div>` +
+    data.procedures.map(p=>`
+      <div class="proc-item">
+        <div>
+          <div class="proc-name">${p.name}</div>
+          <div class="proc-meta">${p.file} · ${p.dialect}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:12px;color:var(--text-secondary)">${p.table_count} tables · ${p.col_count} cols</span>
+          ${p.is_dynamic?'<span class="warn-badge">⚠ Dynamic SQL</span>':''}
+        </div>
+      </div>`).join('');
+}
+
+function opBadges(ops) {
+  return ops.split(', ').map(op=>`<span class="op-badge op-${op.trim()}">${op.trim()}</span>`).join(' ');
+}
+
+function renderTablesTab(data) {
+  document.getElementById('tablesBody').innerHTML = data.tables.map(t=>`
+    <tr data-schema="${t.schema}" data-ops="${t.ops}">
+      <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${t.proc}</span></td>
+      <td><span class="schema-chip">${t.schema}</span></td>
+      <td><strong>${t.table}</strong></td>
+      <td>${opBadges(t.ops)}</td>
+      <td style="color:var(--text-dim);font-size:12px">${t.aliases}</td>
+    </tr>`).join('');
+  document.getElementById('tablesCount').textContent = `${data.tables.length} rows`;
+}
+
+function renderColumnsTab(data) {
+  document.getElementById('colsBody').innerHTML = data.columns.map(c=>`
+    <tr>
+      <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${c.proc}</span></td>
+      <td><span class="schema-chip">${c.schema}</span></td>
+      <td><strong>${c.table}</strong></td>
+      <td>${c.col==='(no columns resolved)'
+        ?`<span class="unresolved-tag">${c.col}</span>`
+        :`<span class="col-name">${c.col}</span>`}</td>
+      <td>${opBadges(c.ops)}</td>
+    </tr>`).join('');
+  document.getElementById('colsCount').textContent = `${data.columns.length} rows`;
+}
+
+function renderSchemaTab(data) {
+  document.getElementById('schemaGrid').innerHTML =
+    Object.entries(data.schema_map).sort(([a],[b])=>a.localeCompare(b)).map(([schema, tables])=>`
+      <div class="schema-card" data-schema="${schema}">
+        <div class="schema-card-header">
+          <span class="schema-name">${schema}</span>
+          <span class="schema-count">${Object.keys(tables).length} table(s)</span>
+        </div>
+        ${Object.entries(tables).sort(([a],[b])=>a.localeCompare(b)).map(([tname,tinfo])=>`
+          <div class="schema-table-row">
+            <div class="schema-table-name" onclick="toggleCols(this)">
+              <span>${tname}</span>
+              <span style="display:flex;align-items:center;gap:6px">
+                ${opBadges(tinfo.ops)}
+                <span style="color:var(--text-dim);font-size:12px">▾</span>
+              </span>
+            </div>
+            <div class="schema-cols">
+              ${tinfo.cols.map(c=>`<span class="col-tag">${c}</span>`).join('') ||
+                '<span style="color:var(--text-dim);font-size:11px;font-style:italic">no columns resolved</span>'}
+            </div>
+          </div>`).join('')}
+      </div>`).join('');
+}
+
+function toggleCols(el) {
+  const d = el.nextElementSibling;
+  d.style.display = d.style.display==='none' ? 'flex' : 'none';
+}
+
+// ── AI Insights ────────────────────────────────────────────────
+function toggleAiOptions() {
+  const enabled = document.getElementById('aiEnabled').checked;
+  const opts    = document.getElementById('aiOptions');
+  const empty   = document.getElementById('aiEmptyState');
+  const panel   = document.getElementById('aiPanel');
+  opts.style.display   = enabled ? 'flex'  : 'none';
+  empty.style.display  = enabled ? 'none'  : 'block';
+  if (!enabled) panel.style.display = 'none';
+}
+
+async function getAiInsights() {
+  if (!analysisResult) return;
+  const panel   = document.getElementById('aiPanel');
+  const loading = document.getElementById('aiLoading');
+  const errDiv  = document.getElementById('aiError');
+  const errMsg  = document.getElementById('aiErrorMsg');
+  const textDiv = document.getElementById('aiText');
+  const procSel = document.getElementById('aiProcSelect').value;
+
+  panel.style.display   = 'block';
+  document.getElementById('aiEmptyState').style.display = 'none';
+  loading.style.display = 'flex';
+  errDiv.style.display  = 'none';
+  textDiv.textContent   = '';
+
+  try {
+    const payload = {
+      procedures: analysisResult.procedures,
+      tables:     analysisResult.tables,
+      columns:    analysisResult.columns,
+      schema_map: analysisResult.schema_map,
+      focus_proc: procSel || null
+    };
+
+    const r = await fetch(`${apiBase()}/ai-insights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({detail: r.statusText}));
+      throw new Error(err.detail || r.statusText);
     }
 
-    function renderTablesTab(data) {
-      document.getElementById('tablesBody').innerHTML = data.tables.map(t => `
-  <tr data-schema="${t.schema}" data-ops="${t.ops}">
-    <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${t.proc}</span></td>
-    <td><span class="schema-chip">${t.schema}</span></td>
-    <td><strong>${t.table}</strong></td>
-    <td>${opBadges(t.ops)}</td>
-    <td style="color:var(--text-dim);font-size:12px">${t.aliases}</td>
-  </tr>`).join('');
-      document.getElementById('tablesCount').textContent = `${data.tables.length} rows`;
-    }
+    const d = await r.json();
+    document.getElementById('aiModelTag').textContent = d.model?.split('/').pop() || 'Mistral-7B';
+    textDiv.textContent = d.insight;
+    showToast('✨', 'AI insights generated');
+  } catch(e) {
+    errDiv.style.display = 'flex';
+    errMsg.textContent   = e.message;
+  } finally {
+    loading.style.display = 'none';
+  }
+}
 
-    function renderColumnsTab(data) {
-      document.getElementById('colsBody').innerHTML = data.columns.map(c => `
-  <tr>
-    <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${c.proc}</span></td>
-    <td><span class="schema-chip">${c.schema}</span></td>
-    <td><strong>${c.table}</strong></td>
-    <td>${c.col === '(no columns resolved)'
-          ? `<span class="unresolved-tag">${c.col}</span>`
-          : `<span class="col-name">${c.col}</span>`}</td>
-    <td>${opBadges(c.ops)}</td>
-  </tr>`).join('');
-      document.getElementById('colsCount').textContent = `${data.columns.length} rows`;
-    }
+// ── Tabs ───────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
 
-    function renderSchemaTab(data) {
-      document.getElementById('schemaGrid').innerHTML =
-        Object.entries(data.schema_map).sort(([a], [b]) => a.localeCompare(b)).map(([schema, tables]) => `
-    <div class="schema-card" data-schema="${schema}">
-      <div class="schema-card-header">
-        <span class="schema-name">${schema}</span>
-        <span class="schema-count">${Object.keys(tables).length} table(s)</span>
-      </div>
-      ${Object.entries(tables).sort(([a], [b]) => a.localeCompare(b)).map(([tname, tinfo]) => `
-        <div class="schema-table-row">
-          <div class="schema-table-name" onclick="toggleCols(this)">
-            <span>${tname}</span>
-            <span style="display:flex;align-items:center;gap:6px">
-              ${opBadges(tinfo.ops)}
-              <span style="color:var(--text-dim);font-size:12px">▾</span>
-            </span>
-          </div>
-          <div class="schema-cols">
-            ${tinfo.cols.map(c => `<span class="col-tag">${c}</span>`).join('') ||
-          '<span style="color:var(--text-dim);font-size:11px;font-style:italic">no columns resolved</span>'}
-          </div>
-        </div>`).join('')}
-    </div>`).join('');
-    }
+// ── Filter / sort ──────────────────────────────────────────────
+function filterTable(tid, q) {
+  q = q.toLowerCase();
+  let shown = 0;
+  document.querySelectorAll(`#${tid} tbody tr`).forEach(r=>{
+    const m = r.textContent.toLowerCase().includes(q);
+    r.style.display = m ? '' : 'none';
+    if(m) shown++;
+  });
+  const cid = tid==='tablesTable' ? 'tablesCount' : 'colsCount';
+  document.getElementById(cid).textContent = `${shown} rows`;
+}
 
-    function toggleCols(el) {
-      const d = el.nextElementSibling;
-      d.style.display = d.style.display === 'none' ? 'flex' : 'none';
-    }
+function applyTableFilters() {
+  const schema = document.getElementById('schemaFilter').value.toLowerCase();
+  const op     = document.getElementById('opFilter').value.toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('#tablesTable tbody tr').forEach(r=>{
+    const ms = !schema || r.dataset.schema?.toLowerCase()===schema;
+    const mo = !op || r.dataset.ops?.toLowerCase().includes(op);
+    r.style.display = ms&&mo ? '' : 'none';
+    if(ms&&mo) shown++;
+  });
+  document.getElementById('tablesCount').textContent = `${shown} rows`;
+}
 
-    // ── AI Insights ────────────────────────────────────────────────
-    function toggleAiOptions() {
-      const enabled = document.getElementById('aiEnabled').checked;
-      const opts = document.getElementById('aiOptions');
-      const empty = document.getElementById('aiEmptyState');
-      const panel = document.getElementById('aiPanel');
-      opts.style.display = enabled ? 'flex' : 'none';
-      empty.style.display = enabled ? 'none' : 'block';
-      if (!enabled) panel.style.display = 'none';
-    }
+function filterCards(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.schema-card').forEach(c=>{
+    c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
 
-    async function getAiInsights() {
-      if (!analysisResult) return;
-      const panel = document.getElementById('aiPanel');
-      const loading = document.getElementById('aiLoading');
-      const errDiv = document.getElementById('aiError');
-      const errMsg = document.getElementById('aiErrorMsg');
-      const textDiv = document.getElementById('aiText');
-      const procSel = document.getElementById('aiProcSelect').value;
+let sortState = {};
+function sortTable(tid, col) {
+  const key = tid+col;
+  sortState[key] = sortState[key]==='asc' ? 'desc' : 'asc';
+  const tbody = document.querySelector(`#${tid} tbody`);
+  [...tbody.querySelectorAll('tr')]
+    .sort((a,b)=>{
+      const av = a.cells[col]?.textContent.trim()||'';
+      const bv = b.cells[col]?.textContent.trim()||'';
+      return sortState[key]==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    })
+    .forEach(r=>tbody.appendChild(r));
+  document.querySelectorAll(`#${tid} th`).forEach((th,i)=>{
+    th.className = i===col ? (sortState[key]==='asc'?'sort-asc':'sort-desc') : '';
+  });
+}
 
-      panel.style.display = 'block';
-      document.getElementById('aiEmptyState').style.display = 'none';
-      loading.style.display = 'flex';
-      errDiv.style.display = 'none';
-      textDiv.textContent = '';
+// ── Download Excel ─────────────────────────────────────────────
+function downloadExcel() {
+  if (!analysisResult) return;
+  const d  = analysisResult;
+  const wb = XLSX.utils.book_new();
 
-      try {
-        const payload = {
-          procedures: analysisResult.procedures,
-          tables: analysisResult.tables,
-          columns: analysisResult.columns,
-          schema_map: analysisResult.schema_map,
-          focus_proc: procSel || null
-        };
+  const sumData = [
+    ['SP Migration Companion — Analysis Report'],
+    [`Generated: ${new Date().toLocaleString()}`],[],
+    ['#','Procedure','File','Dialect','Tables','Columns','Dynamic SQL?'],
+    ...d.procedures.map((p,i)=>[i+1,p.name,p.file,p.dialect,p.table_count,p.col_count,p.is_dynamic?'⚠ YES':'No'])
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumData), 'Summary');
 
-        const r = await fetch(`${apiBase()}/ai-insights`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['Procedure','Schema','Table Name','Operations','Aliases','Source File'],
+    ...d.tables.map(t=>[t.proc,t.schema,t.table,t.ops,t.aliases,t.file])
+  ]), 'Physical Tables');
 
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({ detail: r.statusText }));
-          throw new Error(err.detail || r.statusText);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['Procedure','Schema','Table Name','Column Name','Operations','Source File'],
+    ...d.columns.map(c=>[c.proc,c.schema,c.table,c.col,c.ops,c.file])
+  ]), 'Columns Detail');
+
+  const schData = [['Schema','Table Name','Column Name','Operations','Procedures']];
+  for (const [schema,tables] of Object.entries(d.schema_map).sort()) {
+    for (const [tname,tinfo] of Object.entries(tables).sort()) {
+      if (!tinfo.cols.length) {
+        schData.push([schema,tname,'(no columns resolved)',tinfo.ops,tinfo.procs.join(', ')]);
+      } else {
+        for (const col of tinfo.cols.sort()) {
+          schData.push([schema,tname,col,tinfo.ops,tinfo.procs.join(', ')]);
         }
-
-        const d = await r.json();
-        document.getElementById('aiModelTag').textContent = d.model?.split('/').pop() || 'Mistral-7B';
-        textDiv.textContent = d.insight;
-        showToast('✨', 'AI insights generated');
-      } catch (e) {
-        errDiv.style.display = 'flex';
-        errMsg.textContent = e.message;
-      } finally {
-        loading.style.display = 'none';
       }
     }
+  }
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(schData), 'Schema Breakdown');
 
-    // ── Tabs ───────────────────────────────────────────────────────
-    function switchTab(name, btn) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + name).classList.add('active');
-    }
+  // AI insights sheet if available
+  const aiText = document.getElementById('aiText')?.textContent;
+  if (aiText) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['AI Migration Risk Assessment'],
+      [`Model: Mistral-7B via HuggingFace`],[],
+      [aiText]
+    ]), 'AI Insights');
+  }
 
-    // ── Filter / sort ──────────────────────────────────────────────
-    function filterTable(tid, q) {
-      q = q.toLowerCase();
-      let shown = 0;
-      document.querySelectorAll(`#${tid} tbody tr`).forEach(r => {
-        const m = r.textContent.toLowerCase().includes(q);
-        r.style.display = m ? '' : 'none';
-        if (m) shown++;
-      });
-      const cid = tid === 'tablesTable' ? 'tablesCount' : 'colsCount';
-      document.getElementById(cid).textContent = `${shown} rows`;
-    }
+  XLSX.writeFile(wb, `sp_migration_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('⬇','Excel downloaded');
+}
 
-    function applyTableFilters() {
-      const schema = document.getElementById('schemaFilter').value.toLowerCase();
-      const op = document.getElementById('opFilter').value.toLowerCase();
-      let shown = 0;
-      document.querySelectorAll('#tablesTable tbody tr').forEach(r => {
-        const ms = !schema || r.dataset.schema?.toLowerCase() === schema;
-        const mo = !op || r.dataset.ops?.toLowerCase().includes(op);
-        r.style.display = ms && mo ? '' : 'none';
-        if (ms && mo) shown++;
-      });
-      document.getElementById('tablesCount').textContent = `${shown} rows`;
-    }
-
-    function filterCards(q) {
-      q = q.toLowerCase();
-      document.querySelectorAll('.schema-card').forEach(c => {
-        c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
-      });
-    }
-
-    let sortState = {};
-    function sortTable(tid, col) {
-      const key = tid + col;
-      sortState[key] = sortState[key] === 'asc' ? 'desc' : 'asc';
-      const tbody = document.querySelector(`#${tid} tbody`);
-      [...tbody.querySelectorAll('tr')]
-        .sort((a, b) => {
-          const av = a.cells[col]?.textContent.trim() || '';
-          const bv = b.cells[col]?.textContent.trim() || '';
-          return sortState[key] === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-        })
-        .forEach(r => tbody.appendChild(r));
-      document.querySelectorAll(`#${tid} th`).forEach((th, i) => {
-        th.className = i === col ? (sortState[key] === 'asc' ? 'sort-asc' : 'sort-desc') : '';
-      });
-    }
-
-    // ── Download Excel ─────────────────────────────────────────────
-    function downloadExcel() {
-      if (!analysisResult) return;
-      const d = analysisResult;
-      const wb = XLSX.utils.book_new();
-
-      const sumData = [
-        ['SP Migration Companion — Analysis Report'],
-        [`Generated: ${new Date().toLocaleString()}`], [],
-        ['#', 'Procedure', 'File', 'Dialect', 'Tables', 'Columns', 'Dynamic SQL?'],
-        ...d.procedures.map((p, i) => [i + 1, p.name, p.file, p.dialect, p.table_count, p.col_count, p.is_dynamic ? '⚠ YES' : 'No'])
-      ];
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumData), 'Summary');
-
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-        ['Procedure', 'Schema', 'Table Name', 'Operations', 'Aliases', 'Source File'],
-        ...d.tables.map(t => [t.proc, t.schema, t.table, t.ops, t.aliases, t.file])
-      ]), 'Physical Tables');
-
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-        ['Procedure', 'Schema', 'Table Name', 'Column Name', 'Operations', 'Source File'],
-        ...d.columns.map(c => [c.proc, c.schema, c.table, c.col, c.ops, c.file])
-      ]), 'Columns Detail');
-
-      const schData = [['Schema', 'Table Name', 'Column Name', 'Operations', 'Procedures']];
-      for (const [schema, tables] of Object.entries(d.schema_map).sort()) {
-        for (const [tname, tinfo] of Object.entries(tables).sort()) {
-          if (!tinfo.cols.length) {
-            schData.push([schema, tname, '(no columns resolved)', tinfo.ops, tinfo.procs.join(', ')]);
-          } else {
-            for (const col of tinfo.cols.sort()) {
-              schData.push([schema, tname, col, tinfo.ops, tinfo.procs.join(', ')]);
-            }
-          }
-        }
-      }
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(schData), 'Schema Breakdown');
-
-      // AI insights sheet if available
-      const aiText = document.getElementById('aiText')?.textContent;
-      if (aiText) {
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-          ['AI Migration Risk Assessment'],
-          [`Model: Mistral-7B via HuggingFace`], [],
-          [aiText]
-        ]), 'AI Insights');
-      }
-
-      XLSX.writeFile(wb, `sp_migration_${new Date().toISOString().slice(0, 10)}.xlsx`);
-      showToast('⬇', 'Excel downloaded');
-    }
-
-    // ── Demo ───────────────────────────────────────────────────────
-    function loadDemo() {
-      const sql = `CREATE PROCEDURE sales.usp_ProcessOrders @CustomerID INT, @StartDate DATE AS BEGIN
+// ── Demo ───────────────────────────────────────────────────────
+function loadDemo() {
+  const sql = `CREATE PROCEDURE sales.usp_ProcessOrders @CustomerID INT, @StartDate DATE AS BEGIN
 WITH RecentOrders AS (SELECT o.OrderID,o.OrderDate,o.CustomerID FROM dbo.Orders o WHERE o.OrderDate>=@StartDate)
 INSERT INTO #Staged (OrderID,ProductID,Qty,Price) SELECT od.OrderID,od.ProductID,od.Quantity,od.UnitPrice
 FROM RecentOrders ro INNER JOIN sales.OrderDetails od ON od.OrderID=ro.OrderID
@@ -1592,49 +811,48 @@ INSERT INTO audit.LowStockAlerts (ProductID,AlertDate,StockLevel)
 SELECT ProductID,GETDATE(),StockLevel FROM warehouse.Inventory WHERE ProductID=@ProductID AND StockLevel<10;
 DELETE FROM warehouse.StockTransfers WHERE LastSyncDate<DATEADD(DAY,-90,GETDATE());
 END`;
-      const blob = new Blob([sql], { type: 'text/plain' });
-      uploadedFiles = [new File([blob], 'demo_procedures.sql', { type: 'text/plain' })];
-      renderFileList();
-      showToast('📋', 'Demo SQL loaded — click Analyze via API');
-    }
+  const blob = new Blob([sql],{type:'text/plain'});
+  uploadedFiles = [new File([blob],'demo_procedures.sql',{type:'text/plain'})];
+  renderFileList();
+  showToast('📋','Demo SQL loaded — click Analyze via API');
+}
 
-    // ── Reset ──────────────────────────────────────────────────────
-    function resetTool() {
-      uploadedFiles = [];
-      analysisResult = null;
-      document.getElementById('uploadZone').style.display = 'block';
-      document.getElementById('results').style.display = 'none';
-      document.getElementById('headerActions').style.display = 'none';
-      document.getElementById('progressBar').style.display = 'none';
-      document.getElementById('progressFill').style.width = '0%';
-      document.getElementById('aiEnabled').checked = false;
-      document.getElementById('aiOptions').style.display = 'none';
-      document.getElementById('aiPanel').style.display = 'none';
-      document.getElementById('aiText').textContent = '';
-      document.getElementById('fileInput').value = '';
-      renderFileList();
-      hideError();
-    }
+// ── Reset ──────────────────────────────────────────────────────
+function resetTool() {
+  uploadedFiles  = [];
+  analysisResult = null;
+  document.getElementById('uploadZone').style.display    = 'block';
+  document.getElementById('results').style.display       = 'none';
+  document.getElementById('headerActions').style.display = 'none';
+  document.getElementById('progressBar').style.display   = 'none';
+  document.getElementById('progressFill').style.width    = '0%';
+  document.getElementById('aiEnabled').checked = false;
+  document.getElementById('aiOptions').style.display = 'none';
+  document.getElementById('aiPanel').style.display   = 'none';
+  document.getElementById('aiText').textContent = '';
+  document.getElementById('fileInput').value = '';
+  renderFileList();
+  hideError();
+}
 
-    // ── Error / Toast ──────────────────────────────────────────────
-    function showError(msg) {
-      const b = document.getElementById('errorBanner');
-      b.textContent = msg; b.style.display = 'block';
-    }
-    function hideError() {
-      document.getElementById('errorBanner').style.display = 'none';
-    }
-    function showToast(icon, msg) {
-      const t = document.getElementById('toast');
-      document.getElementById('toastIcon').textContent = icon;
-      document.getElementById('toastMsg').textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
-    }
+// ── Error / Toast ──────────────────────────────────────────────
+function showError(msg) {
+  const b = document.getElementById('errorBanner');
+  b.textContent = msg; b.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('errorBanner').style.display = 'none';
+}
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent  = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
 
-    // Auto-check API on load
-    checkApiHealth();
-  </script>
+// Auto-check API on load
+checkApiHealth();
+</script>
 </body>
-
 </html>

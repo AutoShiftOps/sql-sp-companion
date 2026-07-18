@@ -1,0 +1,118 @@
+{
+  "dynamic_sql": false,
+  "tables": {
+    "DBO.PARTY": {
+      "schema": "dbo",
+      "base": "PARTY",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": [
+        "ID",
+        "NAME",
+        "Party ID",
+        "Party Name",
+        "SCHEDULEDREVIEWDATE"
+      ]
+    },
+    "DBO.PARTYASSOCIATION": {
+      "schema": "dbo",
+      "base": "PartyAssociation",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "PA"
+      ],
+      "columns": [
+        "ENTITYID"
+      ]
+    },
+    "DBO.PARTYCOMPANY": {
+      "schema": "dbo",
+      "base": "PARTYCOMPANY",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": [
+        "ID",
+        "PARTYID",
+        "REFCODE"
+      ]
+    },
+    "REFDATA.LOOKUPPRODUCTTYPE": {
+      "schema": "refdata",
+      "base": "LookupProductType",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "LPT"
+      ],
+      "columns": [
+        "ID",
+        "NAME"
+      ]
+    },
+    "RISK.CASEDERIVEDRISK": {
+      "schema": "risk",
+      "base": "CaseDerivedRisk",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": [
+        "ENTITYID",
+        "Group Risk Rating",
+        "PID"
+      ]
+    },
+    "RISK.RATINGDETAILS": {
+      "schema": "risk",
+      "base": "RATINGDETAILS",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "RRD"
+      ],
+      "columns": [
+        "PID",
+        "REGIONRISKRATING",
+        "Regional Risk Rating"
+      ]
+    },
+    "RISK.RISKCATEGORY": {
+      "schema": "risk",
+      "base": "RISKCATEGORY",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "RCS1"
+      ],
+      "columns": [
+        "ID",
+        "RISKCATEGORYIDENTIFIER"
+      ]
+    },
+    "SALES.PRODUCT": {
+      "schema": "SALES",
+      "base": "PRODUCT",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "P"
+      ],
+      "columns": [
+        "CASEID",
+        "ID",
+        "PID",
+        "Product Type"
+      ]
+    }
+  }
+}

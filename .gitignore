@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+venv/
+.env
+.pytest_cache/
+*.xlsx
+.DS_Store
+CLAUDE.md

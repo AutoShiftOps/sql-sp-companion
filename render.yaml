@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sp-migration-companion-api
+    name: sql-sp-companion-api
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT

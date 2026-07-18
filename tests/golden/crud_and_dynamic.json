@@ -1,0 +1,59 @@
+{
+  "dynamic_sql": true,
+  "tables": {
+    "AUDIT.LOWSTOCKALERTS": {
+      "schema": "AUDIT",
+      "base": "LOWSTOCKALERTS",
+      "ops": [
+        "INSERT"
+      ],
+      "aliases": [],
+      "columns": []
+    },
+    "DBO.CUSTOMERS": {
+      "schema": "DBO",
+      "base": "CUSTOMERS",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": [
+        "CUSTOMERID"
+      ]
+    },
+    "STAGING.INVENTORYIMPORT": {
+      "schema": "STAGING",
+      "base": "INVENTORYIMPORT",
+      "ops": [
+        "TRUNCATE"
+      ],
+      "aliases": [],
+      "columns": []
+    },
+    "WAREHOUSE.INVENTORY": {
+      "schema": "WAREHOUSE",
+      "base": "INVENTORY",
+      "ops": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "aliases": [],
+      "columns": [
+        "PRODUCTID",
+        "STOCKLEVEL",
+        "WAREHOUSEID"
+      ]
+    },
+    "WAREHOUSE.STOCKTRANSFERS": {
+      "schema": "WAREHOUSE",
+      "base": "STOCKTRANSFERS",
+      "ops": [
+        "DELETE",
+        "MERGE",
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": []
+    }
+  }
+}

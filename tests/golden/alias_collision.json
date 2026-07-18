@@ -1,0 +1,57 @@
+{
+  "dynamic_sql": false,
+  "tables": {
+    "CATALOG.PRODUCTS": {
+      "schema": "CATALOG",
+      "base": "PRODUCTS",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": [
+        "PRODUCTNAME"
+      ]
+    },
+    "HR.OFFICES": {
+      "schema": "HR",
+      "base": "OFFICES",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "O"
+      ],
+      "columns": [
+        "OFFICECODE",
+        "OFFICENAME",
+        "REGION"
+      ]
+    },
+    "HR.PEOPLE": {
+      "schema": "HR",
+      "base": "PEOPLE",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [],
+      "columns": [
+        "PERSONNAME"
+      ]
+    },
+    "SALES.ORDERS": {
+      "schema": "SALES",
+      "base": "ORDERS",
+      "ops": [
+        "SELECT"
+      ],
+      "aliases": [
+        "O"
+      ],
+      "columns": [
+        "ISACTIVE",
+        "ORDERID",
+        "TOTALAMOUNT"
+      ]
+    }
+  }
+}

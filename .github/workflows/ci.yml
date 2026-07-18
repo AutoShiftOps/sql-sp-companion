@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest "httpx<0.28"
+
+      - name: Contract tests (non-negotiable promises)
+        run: python -m pytest tests/test_contracts.py -v
+
+      - name: Golden regression gate
+        run: python -m pytest tests/test_golden.py -v
+
+      - name: Known limitations (xfail strict - XPASS means someone fixed one)
+        run: python -m pytest tests/test_known_limitations.py -v
+
+      - name: Tier boundary tests
+        run: python -m pytest tests/test_tiers.py -v
+
+      - name: API contract tests
+        run: python -m pytest tests/test_api.py -v
+
+      - name: Full suite
+        run: python -m pytest tests/ -v
+
+      - name: Fail if goldens are stale
+        run: |
+          python -m pytest tests/test_golden.py --update-golden -q
+          git diff --exit-code tests/golden/ || {
+            echo "::error::Golden files are out of date. Run 'pytest --update-golden' and commit the diff."
+            exit 1
+          }
+
+      - name: Smoke-test API startup
+        run: python -c "from main import app; print('FastAPI app imports OK')"

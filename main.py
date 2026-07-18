@@ -19,6 +19,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from limits import (
+    active_tier, check_upload_limits, check_result_limits, TierLimitExceeded,
+)
+
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -31,12 +35,18 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten in production
+    allow_origins=[
+        "https://sql-sp-companion.vercel.app",
+        "http://localhost:8000",
+        "null",  # file:// origin, for people who just open index.html
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ── HuggingFace config ────────────────────────────────────────────────────────
+__version__ = "1.0.0"
+
 HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 HF_TOKEN   = os.getenv("HF_TOKEN", "")   # set via Render env var
 
@@ -100,9 +110,30 @@ def read_bytes_safe(raw: bytes) -> str:
     return raw.decode('latin-1', errors='replace')
 
 
+def mask_string_literals(sql: str) -> str:
+    """
+    Replace the CONTENTS of single-quoted string literals with a placeholder.
+
+    Why: without this, `WHERE Notes = 'migrated FROM dbo.Phantom'` makes the
+    FROM-pattern match inside the literal and invent a table that does not
+    exist. That violates the "never invent" contract (see tests/test_contracts).
+
+    It also makes the dynamic-SQL boundary honest: we flag EXEC/sp_executesql as
+    unanalyzable, so we must not simultaneously half-report tables scraped out
+    of the dynamic SQL string.
+
+    Quote length is preserved so column offsets stay roughly stable. Escaped
+    quotes ('') are handled by the alternation.
+    """
+    def blank(m):
+        return "'" + ("\u0000" * (len(m.group(0)) - 2)) + "'"
+    return re.sub(r"'(?:[^']|'')*'", blank, sql)
+
+
 def clean_sql(sql: str) -> str:
-    sql = re.sub(r'/\*.*?\*/', ' ', sql, flags=re.DOTALL)
-    sql = re.sub(r'--[^\n]*', ' ', sql)
+    sql = re.sub(r'/\*.*?\*/', ' ', sql, flags=re.DOTALL)   # block comments
+    sql = re.sub(r'--[^\n]*', ' ', sql)                      # line comments
+    sql = mask_string_literals(sql)                          # literal contents
     sql = re.sub(r'\s+', ' ', sql)
     return sql.strip()
 
@@ -321,13 +352,20 @@ def parse_sp(sql: str):
 
 @app.get("/")
 def root():
-    return {"service": "SP Migration Companion API", "version": "1.0.0",
+    return {"service": "SP Migration Companion API", "version": __version__,
             "docs": "/docs", "status": "healthy"}
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "hf_configured": bool(HF_TOKEN)}
+    tier = active_tier()
+    return {
+        "status": "ok",
+        "version": __version__,
+        "hf_configured": bool(HF_TOKEN),
+        "tier": tier.name,
+        "limits": tier.as_dict(),
+    }
 
 
 @app.post("/analyze")
@@ -335,14 +373,33 @@ async def analyze(files: list[UploadFile] = File(...)):
     """
     Analyze one or more SQL files.
     Returns structured extraction: procedures, tables, columns, schema_map.
+    Subject to the active tier's limits (see /health for current limits).
     """
+    tier = active_tier()
+
+    # Read all payloads up front so we can enforce size limits before parsing.
+    payloads = []
+    for upload in files:
+        payloads.append((upload.filename, await upload.read()))
+
+    try:
+        check_upload_limits(tier, [len(raw) for _, raw in payloads])
+    except TierLimitExceeded as e:
+        raise HTTPException(status_code=413, detail={
+            "error": "tier_limit_exceeded",
+            "message": e.message,
+            "limit": e.limit_name,
+            "limit_value": e.limit_value,
+            "actual": e.actual,
+            "tier": tier.name,
+        })
+
     all_procedures = []
     all_tables     = []
     all_columns    = []
     schema_map     = {}
 
-    for upload in files:
-        raw     = await upload.read()
+    for filename, raw in payloads:
         sql     = read_bytes_safe(raw)
         dialect = detect_dialect(sql)
         procs   = split_procedures(sql)
@@ -355,7 +412,7 @@ async def analyze(files: list[UploadFile] = File(...)):
 
             proc_entry = {
                 "name":       pname,
-                "file":       upload.filename,
+                "file":       filename,
                 "dialect":    dialect,
                 "is_dynamic": is_dynamic,
                 "table_count": len(phys_only),
@@ -372,7 +429,7 @@ async def analyze(files: list[UploadFile] = File(...)):
 
                 all_tables.append({
                     "proc":    pname,
-                    "file":    upload.filename,
+                    "file":    filename,
                     "schema":  schema,
                     "table":   base,
                     "ops":     ops,
@@ -382,7 +439,7 @@ async def analyze(files: list[UploadFile] = File(...)):
                 if not cols:
                     all_columns.append({
                         "proc":   pname,
-                        "file":   upload.filename,
+                        "file":   filename,
                         "schema": schema,
                         "table":  base,
                         "col":    "(no columns resolved)",
@@ -392,7 +449,7 @@ async def analyze(files: list[UploadFile] = File(...)):
                     for col in cols:
                         all_columns.append({
                             "proc":   pname,
-                            "file":   upload.filename,
+                            "file":   filename,
                             "schema": schema,
                             "table":  base,
                             "col":    col,
@@ -414,8 +471,29 @@ async def analyze(files: list[UploadFile] = File(...)):
                 if pname not in schema_map[schema][base]['procs']:
                     schema_map[schema][base]['procs'].append(pname)
 
+    distinct_tables = len({f"{t['schema']}.{t['table']}" for t in all_tables})
+    try:
+        check_result_limits(tier, distinct_tables)
+    except TierLimitExceeded as e:
+        raise HTTPException(status_code=413, detail={
+            "error": "tier_limit_exceeded",
+            "message": e.message,
+            "limit": e.limit_name,
+            "limit_value": e.limit_value,
+            "actual": e.actual,
+            "tier": tier.name,
+        })
+
+    from datetime import datetime, timezone
     return {
         "status":     "success",
+        "meta": {
+            "tool":         "sql-sp-companion",
+            "version":      __version__,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "files":        [fn for fn, _ in payloads],
+            "tier":         tier.name,
+        },
         "procedures": all_procedures,
         "tables":     all_tables,
         "columns":    all_columns,
