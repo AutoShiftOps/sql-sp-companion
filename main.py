@@ -47,7 +47,11 @@ app.add_middleware(
 # ── HuggingFace config ────────────────────────────────────────────────────────
 __version__ = "1.0.0"
 
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+# HF retired the legacy api-inference.huggingface.co text-generation endpoint in
+# favor of an OpenAI-compatible chat-completions router. Mistral-7B-Instruct-v0.2
+# is still served (single provider: featherless-ai), just through the new router.
+HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
+HF_MODEL   = "mistralai/Mistral-7B-Instruct-v0.2"
 HF_TOKEN   = os.getenv("HF_TOKEN", "")   # set via Render env var
 
 
@@ -553,7 +557,7 @@ async def ai_insights(req: AIInsightRequest):
 
     focus = f"\nFocus especially on procedure: {req.focus_proc}" if req.focus_proc else ""
 
-    prompt = f"""<s>[INST] You are a senior database migration architect. Analyze this stored procedure extraction report and provide a concise migration risk assessment.
+    prompt = f"""Analyze this stored procedure extraction report and provide a concise migration risk assessment.
 
 EXTRACTION SUMMARY:
 - Procedures analyzed: {len(req.procedures)}
@@ -574,38 +578,35 @@ Provide:
 3. RECOMMENDED MIGRATION ORDER: which schemas/tables to migrate first and why
 4. WATCH POINTS: any patterns that need manual review before migration
 
-Be specific, reference actual table and schema names from the data. Keep response under 350 words. [/INST]"""
+Be specific, reference actual table and schema names from the data. Keep response under 350 words."""
 
     try:
         response = requests.post(
             HF_API_URL,
             headers={"Authorization": f"Bearer {HF_TOKEN}"},
             json={
-                "inputs": prompt,
-                "parameters": {
-                    "max_new_tokens": 500,
-                    "temperature":    0.3,
-                    "return_full_text": False,
-                    "do_sample": True,
-                }
+                "model":    HF_MODEL,
+                "messages": [
+                    {"role": "system", "content": "You are a senior database migration architect."},
+                    {"role": "user",   "content": prompt},
+                ],
+                "max_tokens":  500,
+                "temperature": 0.3,
             },
             timeout=60
         )
         response.raise_for_status()
         result = response.json()
 
-        # HF returns list of generated_text
-        if isinstance(result, list) and result:
-            text = result[0].get('generated_text', '')
-        elif isinstance(result, dict):
-            text = result.get('generated_text', str(result))
-        else:
-            text = str(result)
+        choices = result.get('choices') or []
+        if not choices:
+            raise ValueError(f"no choices in response: {result}")
+        text = choices[0]['message']['content']
 
         return {
             "status":  "success",
             "insight": text.strip(),
-            "model":   "mistralai/Mistral-7B-Instruct-v0.2",
+            "model":   HF_MODEL,
             "focus":   req.focus_proc
         }
 
