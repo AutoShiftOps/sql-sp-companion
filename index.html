@@ -171,6 +171,10 @@ tr:hover td{background:rgba(0,194,168,.04)}
 .ai-content{font-size:13px;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;font-family:var(--font-body)}
 .ai-content strong{color:var(--purple);font-weight:700}
 .ai-content code{font-family:var(--font-mono);background:var(--surface-high);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12px}
+.ai-content .ai-h1,.ai-content .ai-h2,.ai-content .ai-h3{display:inline-block;font-weight:700;color:var(--text-primary)}
+.ai-content .ai-h1{font-size:17px}
+.ai-content .ai-h2{font-size:15px}
+.ai-content .ai-h3{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--accent)}
 .ai-loading{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:13px}
 .ai-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -631,12 +635,17 @@ function toggleAiOptions() {
   if (!enabled) panel.style.display = 'none';
 }
 
-// Renders the small markdown subset the AI prompt asks for (bold, inline code).
-// Escapes HTML first so anything embedded in the LLM's output (which is built
-// from user-uploaded table/column/schema names) can't inject markup.
+// Renders the small markdown subset the AI prompt asks for (headers, bold,
+// inline code). Escapes HTML first so anything embedded in the LLM's output
+// (which is built from user-uploaded table/column/schema names) can't inject
+// markup. Headers are line-anchored (^, multiline) since the container relies
+// on white-space:pre-wrap rather than wrapping lines in <p>/<div>.
 function renderAiMarkdown(text) {
   const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return esc
+    .replace(/^### (.+)$/gm, '<span class="ai-h3">$1</span>')
+    .replace(/^## (.+)$/gm,  '<span class="ai-h2">$1</span>')
+    .replace(/^# (.+)$/gm,   '<span class="ai-h1">$1</span>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
