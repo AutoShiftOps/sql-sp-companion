@@ -169,6 +169,8 @@ tr:hover td{background:rgba(0,194,168,.04)}
 .ai-panel-title{font-size:14px;font-weight:700;color:var(--purple);display:flex;align-items:center;gap:8px}
 .ai-model-tag{font-size:10px;background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);padding:2px 8px;border-radius:10px;font-weight:400}
 .ai-content{font-size:13px;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;font-family:var(--font-body)}
+.ai-content strong{color:var(--purple);font-weight:700}
+.ai-content code{font-family:var(--font-mono);background:var(--surface-high);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12px}
 .ai-loading{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:13px}
 .ai-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -256,7 +258,6 @@ tr:hover td{background:rgba(0,194,168,.04)}
       <div class="meta-divider"></div>
       <div class="meta-stat"><span class="num" id="statCols">0</span><span class="label">Columns</span></div>
     </div>
-    <button class="btn btn-primary" onclick="downloadExcel()">⬇ Download Excel</button>
   </div>
 
   <div class="tabs-bar">
@@ -630,6 +631,16 @@ function toggleAiOptions() {
   if (!enabled) panel.style.display = 'none';
 }
 
+// Renders the small markdown subset the AI prompt asks for (bold, inline code).
+// Escapes HTML first so anything embedded in the LLM's output (which is built
+// from user-uploaded table/column/schema names) can't inject markup.
+function renderAiMarkdown(text) {
+  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
 async function getAiInsights() {
   if (!analysisResult) return;
   const panel   = document.getElementById('aiPanel');
@@ -667,7 +678,7 @@ async function getAiInsights() {
 
     const d = await r.json();
     document.getElementById('aiModelTag').textContent = d.model?.split('/').pop() || 'Qwen2.5-Coder-3B-Instruct';
-    textDiv.textContent = d.insight;
+    textDiv.innerHTML = renderAiMarkdown(d.insight);
     showToast('✨', 'AI insights generated');
   } catch(e) {
     errDiv.style.display = 'flex';
